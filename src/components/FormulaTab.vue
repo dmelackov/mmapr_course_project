@@ -249,11 +249,18 @@ watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], (
                     <p class="text-2xl text-primary-800">
                         Формулы
                     </p>
-                    <Button icon="pi pi-plus"
-                        @click="addFormula"
-                        severity="success"
-                        rounded
-                        aria-label="Добавить" />
+                    <div class="flex gap-2">
+                        <Button icon="pi pi-eraser"
+                            @click="formulas.length = 0"
+                            severity="danger"
+                            rounded
+                            aria-label="Очистить" />
+                        <Button icon="pi pi-plus"
+                            @click="addFormula"
+                            severity="success"
+                            rounded
+                            aria-label="Добавить" />
+                    </div>
                 </div>
                 <hr>
                 <ScrollPanel class="flex-1 overflow-auto">
@@ -269,12 +276,12 @@ watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], (
                                     <MathLiveInput v-model:="formulas[pos].text"
                                         class="w-full"></MathLiveInput>
                                 </div>
-                                <div>
+                                <!-- <div>
                                     <Button icon="pi pi-bars"
                                         aria-label="Filter"
                                         size="small"
                                         @click="editFormula(pos)" />
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>

@@ -383,7 +383,7 @@ function createSystem() {
         })
     }
     console.log(formulaStore.formulas)
-    //formulaStore.activeTab = "0"
+    formulaStore.activeTab = "0"
 }
 
 </script>
