@@ -5,35 +5,31 @@ import MathLiveInput from './MathLiveInput.vue';
 import { Button } from 'primevue';
 import ScrollPanel from 'primevue/scrollpanel';
 import Dialog from 'primevue/dialog';
-import { MathfieldElement } from 'mathlive';
-import { ComputeEngine, } from '@cortex-js/compute-engine';
+import { ComputeEngine } from '@cortex-js/compute-engine';
 import InputNumber from 'primevue/inputnumber';
-import { eulerStep, rungeKuttaStep, type Context, type DerivativeSystem, type Vector } from '@/utils/methods';
-
-interface FormulaData {
-    func: string
-    text: string
-    method: "standard" | "modified" | "runge"
-    graphColor: string
-}
+import Select from 'primevue/select';
+import { eulerStep, modifiedEulerStep, rungeKuttaStep, type Context, type DerivativeSystem, type Vector } from '@/utils/methods';
+import { useFormula } from '@/stores/formulaStore';
 
 interface VariableData {
     name: string
     value: number
 }
 
-const formulas = reactive<FormulaData[]>([])
+const formula_store = useFormula()
+
+const formulas = formula_store.formulas
 const editDialogVisible = ref(false)
 const editDialogTarget = ref<Number | null>(null)
+const methodOptions = ref([{ name: "Метод Эйлера", value: "standard" }, { name: "Модифицированный метод Эйлера", value: "modified" }, { name: "Рунге Кутта 4-го порядка", value: "runge" }])
+const selectedMethod = ref({ name: "Метод Эйлера", value: "standard" })
 
 const computeEngine = new ComputeEngine()
 
 function addFormula() {
     formulas.push({
         func: `f_${formulas.length + 1}`,
-        text: '',
-        method: "standard",
-        graphColor: '#' + ((Math.random() * 0xffffff) << 0).toString(16)
+        text: ''
     })
 }
 
@@ -108,7 +104,7 @@ const chartOptions = computed(() => {
 })
 
 const findedFreeVars = ref<VariableData[]>([])
-const additionalVars = ref<VariableData[]>([{ name: "x_0", value: 0 }, { name: "h", value: 0 }, { name: "n", value: 0 }])
+const additionalVars = ref<VariableData[]>([{ name: "x_0", value: 0 }, { name: "h", value: 0.1 }, { name: "n", value: 20 }])
 
 watch(() => formulas, () => {
     const uniqueVars: string[] = []
@@ -125,7 +121,7 @@ watch(() => formulas, () => {
         uniqueVars.push(`${formula.func}_0`)
     })
 
-    const filteredVars = uniqueVars.filter((v) => v !== 'Nothing' && !isFunctionName(v));
+    const filteredVars = uniqueVars.filter((v) => v !== 'Nothing' && !isFunctionName(v) && v !== "x");
 
     findedFreeVars.value = findedFreeVars.value.filter((v) => filteredVars.includes(v.name))
         .map((v) => ({ name: v.name, value: v.value }));
@@ -153,7 +149,7 @@ function getVar(name: string) {
     return freeVariables.value.find((v) => v.name == name)
 }
 
-watch([() => formulas, () => freeVariables.value], () => {
+watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], () => {
     const functions: { [id: string]: Function } = {}
     const workingFormulas = []
 
@@ -167,8 +163,6 @@ watch([() => formulas, () => freeVariables.value], () => {
         }
         workingFormulas.push(f)
     }
-
-
 
     const n = getVar("n")?.value
     const h = getVar("h")?.value
@@ -204,6 +198,15 @@ watch([() => formulas, () => freeVariables.value], () => {
 
     const constContext = getContext();
 
+    const methodFunction = {
+        "standard": eulerStep,
+        "modified": modifiedEulerStep,
+        "runge": rungeKuttaStep
+    }[selectedMethod.value.value]
+
+    if (!methodFunction)
+        throw "IDK"
+
     for (let step = 0; step < n; step++) {
         const x = x_0 + step * h;
 
@@ -211,10 +214,11 @@ watch([() => formulas, () => freeVariables.value], () => {
         funcIds.forEach((id) => {
             currentContext[id] = newValues[id][newValues[id].length - 1];
         });
+        currentContext["x"] = x
 
         const contextHistory: Context = [currentContext];
 
-        const [nextX, nextY] = rungeKuttaStep(fList, x, y, contextHistory, h); // TODO: Выбор метода
+        const [nextX, nextY] = methodFunction(fList, x, y, contextHistory, h);
         newArgSteps.push(nextX);
 
         funcIds.forEach((id, i) => {
@@ -231,6 +235,16 @@ watch([() => formulas, () => freeVariables.value], () => {
     <div class="w-full flex h-full">
         <div class="bg-surface-200 p-2 w-1/3 flex flex-col gap-4">
             <div class="h-1/2 bg-surface-300 p-2 flex flex-col gap-1">
+                <div class="flex justify-between items-center p-1">
+                    <p class="text-2xl text-primary-800">
+                        Метод
+                    </p>
+                    <Select v-model="selectedMethod"
+                        :options="methodOptions"
+                        optionLabel="name"
+                        placeholder="Выберите метод"
+                        class="w-full md:w-56" />
+                </div>
                 <div class="flex justify-between items-center p-1">
                     <p class="text-2xl text-primary-800">
                         Формулы

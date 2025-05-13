@@ -7,11 +7,15 @@ import TabPanel from 'primevue/tabpanel';
 
 import FormulaTab from '@/components/FormulaTab.vue';
 import TMOTab from './components/TMOTab.vue';
+import { useFormula } from './stores/formulaStore';
+
+const formulaStore = useFormula()
+
 </script>
 
 <template>
   <div class="w-screen h-screen bg-surface-50">
-    <Tabs value="0"
+    <Tabs v-model:value="formulaStore.activeTab"
       class="h-full">
       <TabList>
         <Tab value="0">Формулы</Tab>
