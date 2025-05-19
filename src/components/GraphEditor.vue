@@ -95,7 +95,7 @@
             header="Редактировать вес ребра"
             modal>
             <div class="p-4">
-                <InputText v-model="selectedEdge.label"
+                <InputText v-model="selectedEdgeLabel"
                     class="w-full" />
             </div>
         </Dialog>
@@ -160,6 +160,16 @@ const mode = ref<Mode>('normal');
 const modes: Mode[] = ['normal', 'connect'];
 const selectedNodes = ref<Node[]>([]);
 
+const selectedEdgeLabel = computed({
+    set(val: string) {
+        if (selectedEdge.value == null) return
+        selectedEdge.value.label = val
+    },
+    get() {
+        if (selectedEdge.value == null) return ""
+        return selectedEdge.value.label
+    }
+})
 // Сетка
 const gridLinesX = computed<number[]>(() =>
     Array.from({ length: Math.ceil(width / gridSize) }, (_, i) => i * gridSize)
