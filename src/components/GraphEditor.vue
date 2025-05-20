@@ -196,7 +196,7 @@ function onSvgClick(e: MouseEvent) {
     const x = Math.round(cursor.x / gridSize) * gridSize;
     const y = Math.round(cursor.y / gridSize) * gridSize;
 
-    const label = `S_${nodeIdCounter}`;
+    const label = `S_{${nodeIdCounter}}`;
     nodes.push({ id: nodeIdCounter++, x, y, label });
 }
 

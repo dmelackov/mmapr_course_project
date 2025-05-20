@@ -28,7 +28,7 @@ const computeEngine = new ComputeEngine()
 
 function addFormula() {
     formulas.push({
-        func: `f_${formulas.length + 1}`,
+        func: `f_{${formulas.length + 1}}`,
         text: ''
     })
 }
