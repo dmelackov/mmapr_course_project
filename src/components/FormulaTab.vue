@@ -31,7 +31,7 @@ function addFormula() {
     if (formulas.length + 1 < 10)
         func = `f_${formulas.length + 1}`
     else
-        `f_{${formulas.length + 1}}`
+        func = `f_{${formulas.length + 1}}`
 
     formulas.push({
         func: func,
