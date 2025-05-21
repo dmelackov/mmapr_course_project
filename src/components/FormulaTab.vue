@@ -27,8 +27,14 @@ const selectedMethod = ref({ name: "Метод Эйлера", value: "standard" 
 const computeEngine = new ComputeEngine()
 
 function addFormula() {
+    let func = ""
+    if (formulas.length + 1 < 10)
+        func = `f_${formulas.length + 1}`
+    else
+        `f_{${formulas.length + 1}}`
+
     formulas.push({
-        func: `f_{${formulas.length + 1}}`,
+        func: func,
         text: ''
     })
 }
@@ -57,7 +63,6 @@ const chartData = computed(() => {
             data: zip(argumentValues.value, functionsValues.value[f.func])
         })
     })
-    console.log(datasets)
     return {
         datasets: datasets
     };
@@ -106,19 +111,46 @@ const chartOptions = computed(() => {
 const findedFreeVars = ref<VariableData[]>([])
 const additionalVars = ref<VariableData[]>([{ name: "x_0", value: 0 }, { name: "h", value: 0.1 }, { name: "n", value: 20 }])
 
+function formatLatexIndex(char: string, value: string) {
+    return value.length === 1 ? `${char}${value}` : `${char}{${value}}`;
+}
+
+function cortexSymbolToLatex(symbol: string) {
+    const greekLetters = new Set([
+        "alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta", "iota", "kappa",
+        "lambda", "mu", "nu", "xi", "omicron", "pi", "rho", "sigma", "tau", "upsilon", "phi",
+        "chi", "psi", "omega"
+    ]);
+
+    const match = symbol.match(/^([a-zA-Z]+)(?:_([0-9]+))?(?:\^([0-9]+))?$/);
+    if (!match) return symbol;
+
+    const [, name, sub, sup] = match;
+    const base = greekLetters.has(name) ? `\\${name}` : name;
+
+    let result = base;
+    if (sub) result += formatLatexIndex("_", sub);
+    if (sup) result += formatLatexIndex("^", sup);
+
+    return result;
+}
+
+
 watch(() => formulas, () => {
     const uniqueVars: string[] = []
     formulas.forEach((formula) => {
         let res = (computeEngine?.parse(formula.text))
-        const freeVars = res.freeVariables
+        const freeVars = res.unknowns
+
         freeVars.forEach((vr) => {
-            if (!uniqueVars.includes(vr)) uniqueVars.push(vr)
+            const converted = cortexSymbolToLatex(vr)
+            if (!uniqueVars.includes(converted)) uniqueVars.push(converted)
         })
     })
     const isFunctionName = (name: string) => formulas.some((formula) => formula.func === name);
 
     formulas.forEach((formula, i) => {
-        uniqueVars.push(`${formula.func}_0`)
+        uniqueVars.push(`${formula.func}_{,0}`)
     })
 
     const filteredVars = uniqueVars.filter((v) => v !== 'Nothing' && !isFunctionName(v) && v !== "x");
@@ -140,7 +172,9 @@ const freeVariables = computed(() => {
 function getContext() {
     const context: { [id: string]: number } = {}
     freeVariables.value.forEach((vr) => {
-        context[vr.name] = vr.value
+        let index = computeEngine.parse(vr.name).symbol
+        if (index)
+            context[index] = vr.value
     })
     return context
 }
@@ -157,11 +191,14 @@ watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], (
         const f = formulas[i];
         if (f.text == "") return
         try {
+            console.log(f.text)
+            console.log(computeEngine.parse(f.text))
             const func = computeEngine.parse(f.text).compile()
             functions[f.func] = func
+            workingFormulas.push(f)
         } catch (error) {
+            console.error("Parsing exception: ", error)
         }
-        workingFormulas.push(f)
     }
 
     const n = getVar("n")?.value
@@ -188,7 +225,7 @@ watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], (
 
     // Начальное значение вектора y
     workingFormulas.forEach((f) => {
-        const start_value = getVar(f.func + "_0")
+        const start_value = getVar(f.func + "_{,0}")
         if (!start_value) return
         newValues[f.func] = ([start_value.value])
     })
@@ -212,7 +249,9 @@ watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], (
 
         const currentContext: Record<string, number> = { ...constContext };
         funcIds.forEach((id) => {
-            currentContext[id] = newValues[id][newValues[id].length - 1];
+            let index = computeEngine.parse(id).symbol
+            if (index)
+                currentContext[index] = newValues[id][newValues[id].length - 1];
         });
         currentContext["x"] = x
 
@@ -234,7 +273,7 @@ watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], (
 <template>
     <div class="w-full flex h-full">
         <div class="bg-surface-200 p-2 w-1/3 flex flex-col gap-4">
-            <div class="h-1/2 bg-surface-300 p-2 flex flex-col gap-1">
+            <div class="flex-grow min-h-0 bg-surface-300 p-2 flex flex-col gap-1">
                 <div class="flex justify-between items-center p-1">
                     <p class="text-2xl text-primary-800">
                         Метод
@@ -287,7 +326,7 @@ watch([() => formulas, () => freeVariables.value, () => selectedMethod.value], (
                     </div>
                 </ScrollPanel>
             </div>
-            <div class="h-1/2 bg-surface-300 p-2 gap-1 flex flex-col">
+            <div class="flex-grow min-h-0 bg-surface-300 p-2 gap-1 flex flex-col">
                 <div class="flex justify-between items-center p-1">
                     <p class="text-2xl text-primary-800">
                         Свободные переменные

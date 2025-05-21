@@ -95,8 +95,8 @@
             header="Редактировать вес ребра"
             modal>
             <div class="p-4">
-                <InputText v-model="selectedEdgeLabel"
-                    class="w-full" />
+                <MathLiveInput v-model:="selectedEdgeLabel"
+                    class="w-full not-p-selected:border-slate-300 border-1"></MathLiveInput>
             </div>
         </Dialog>
     </div>
@@ -110,6 +110,7 @@ import SelectButton from 'primevue/selectbutton';
 import { Button } from 'primevue';
 import { useFormula } from '@/stores/formulaStore';
 import { ComputeEngine, type BoxedExpression } from '@cortex-js/compute-engine';
+import MathLiveInput from './MathLiveInput.vue';
 
 const formulaStore = useFormula()
 
@@ -196,8 +197,17 @@ function onSvgClick(e: MouseEvent) {
     const x = Math.round(cursor.x / gridSize) * gridSize;
     const y = Math.round(cursor.y / gridSize) * gridSize;
 
-    const label = `S_{${nodeIdCounter}}`;
-    nodes.push({ id: nodeIdCounter++, x, y, label });
+    let max_id = 0
+    nodes.forEach((nd) => {
+        if (nd.id > max_id) max_id = nd.id
+    })
+    max_id++
+    let label
+    if (max_id < 10)
+        label = `S_${max_id}`;
+    else
+        label = `S_{${max_id}}`;
+    nodes.push({ id: max_id, x, y, label });
 }
 
 function removeNode(node: Node) {

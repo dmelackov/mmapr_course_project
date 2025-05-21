@@ -14,14 +14,14 @@ const formulaStore = useFormula()
 </script>
 
 <template>
-  <div class="w-screen h-screen bg-surface-50">
+  <div class="w-screen h-screen bg-surface-50 max-h-screen">
     <Tabs v-model:value="formulaStore.activeTab"
-      class="h-full">
+      class="h-full flex flex-col max-h-full">
       <TabList>
         <Tab value="0">Формулы</Tab>
         <Tab value="1">Теория массового обслуживания</Tab>
       </TabList>
-      <TabPanels class="h-full">
+      <TabPanels class="grow min-h-0">
         <TabPanel value="0"
           class="h-full">
           <FormulaTab></FormulaTab>

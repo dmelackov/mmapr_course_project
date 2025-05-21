@@ -24,6 +24,7 @@ MathfieldElement.fontsDirectory = "/fonts"
 onMounted(() => {
     mathfield = new MathfieldElement(props.options ?? {})
     mathfield.value = props.modelValue
+    mathfield.smartSuperscript = true
 
 
     if (props.class) {
